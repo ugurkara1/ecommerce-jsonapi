@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Validator;
 class DiscountController extends Controller
 {
     public function index(){
-        $discounts=Discounts::with(['categories','products','variants'])->get();
+        $discounts=Discounts::with(['categories','products','variants','brands'])->get();
         return response()->json([
             'success'=>true,
             'message'=>__('messages.discounts'),
@@ -36,7 +36,7 @@ class DiscountController extends Controller
             'value'=>'sometimes|required|numeric|min:0',
             'start_date'=> 'nullable|date',
             'end_date'=> 'nullable|date',
-            'applies_to'=> 'sometimes|required|in:all,categories,products,variants',
+            'applies_to'=> 'sometimes|required|in:all,categories,products,variants,brands',
             'is_active'=> 'sometimes|boolean',
             'category_ids'=> 'required_if:applies_to,categories|array',
             'category_ids.*'=> 'exists:categories,id',
@@ -44,6 +44,8 @@ class DiscountController extends Controller
             'product_ids.*'=> 'exists:products,id',
             'variant_ids'=> 'required_if:applies_to,variants|array',
             'variant_ids.*'=> 'exists:product_variants,id',
+            'brand_ids'=>'required_if:applies_to,brands|array',
+            'brands_ids.*'=>'exists:brands,id'
         ]);
 
         if($validator->fails()){
@@ -81,11 +83,15 @@ class DiscountController extends Controller
             $discount->variants()->sync($data['variant_ids']);
             $this->updateDiscountPricesByVariants($data['variant_ids'], $discount);
         }
+        else if($data['applies_to'] === 'brands'&& isset($data[ 'brand_ids'])){
+            $discount->brands()->sync($data['brand_ids']);
+            $this->updateDiscountPricesByBrands($data['brand_ids'],$discount);
+        }
 
         return response()->json([
             'success'=>true,
             'message'=>__('messages.discount_created'),
-            'data'=>$discount->load(['categories','products','variants']),
+            'data'=>$discount->load(['categories','products','variants','brands']),
         ],201);
     }
     private function updateDiscountPricesByCategories($categoryIds,$discount){
@@ -120,6 +126,22 @@ class DiscountController extends Controller
         $variants=ProductVariants::whereIn('id',$variantIds)->get();
         foreach ($variants as $variant){
             $this->applyDiscount($variant, $discount);
+        }
+    }
+    private function updateDiscountPricesByBrands($brandIds,$discount){
+        $products = Products::whereHas('brands', function ($query) use ($brandIds): void {
+            $query->whereIn('brands.id', $brandIds);
+        })->get();
+
+        foreach ($products as $product){
+            $this->applyDiscount($product, $discount);
+        }
+
+        $productIds = $products->pluck('id')->toArray();
+        $variants=ProductVariants::whereIn('product_id',$productIds)->get();
+        // Tüm variantlara indirim uyguluyoruz.
+        foreach ($variants as $variant) {
+            $this->applyDiscountToVariant($variant, $discount);
         }
     }
 
@@ -237,7 +259,7 @@ class DiscountController extends Controller
                 'message'=>__('messages.unauthorized'),
             ],401);
         }
-        $discount = Discounts::with(['products', 'categories', 'variants'])->find($discountId);
+        $discount = Discounts::with(['products', 'categories', 'variants','brands'])->find($discountId);
         if(!$discount){
             return response()->json([
                 'success'=>false,
@@ -271,6 +293,22 @@ class DiscountController extends Controller
 
                 }
                 break;
+            case 'brands':
+                foreach($discount->brands as $brand) {
+                    $products = Products::whereHas('brands', function ($query) use ($brand) {
+                        $query->where('categories.id', $brand->id);
+                    })->get();
+                    foreach ($products as $product) {
+                        $product->update(['discount_price' => null]);
+                    }
+                    //ilgili ürünlerin id lerini alıp,bu id'lerin variantlarını buluyoruz
+                    $productIds = $products->pluck('id')->toArray();
+                    $variants = ProductVariants::whereIn('product_id', $productIds)->get();
+                    foreach ($variants as $variant) {
+                        $variant->update(['discount_price' => null]);
+                    }
+
+                }
             case 'variants':
                 foreach($discount->variants as $variant){
                     $variant->update(['discount_price'=>null]);
@@ -309,7 +347,7 @@ class DiscountController extends Controller
     }
     //show discount
     public function show($id){
-        $discount=Discounts::with(['categories','products','variants'])->where('id',$id)->first();
+        $discount=Discounts::with(['categories','products','variants','brands'])->where('id',$id)->first();
 
         if(!$discount){
             return response()->json([

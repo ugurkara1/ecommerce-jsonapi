@@ -30,4 +30,10 @@ class Discounts extends Model
     {
         return $this->belongsToMany(ProductVariants::class, 'discount_variants','discount_id','variant_id');
     }
+    public function segments(){
+        return $this->belongsToMany(Segments::class,'discount_segments','discount_id','segment_id');
+    }
+    public function brands(){
+        return $this->belongsToMany(Brands::class,'discount_brands','discount_id','brand_id');
+    }
 }

@@ -10,7 +10,7 @@ class CustomerProfile extends Model
     protected $table = "customer_profiles";
     protected $fillable = [
         'customer_id',
-        'nameSurname',
+        'nameSurname',  
         'phone',
         'weight',
         'height',
@@ -18,6 +18,6 @@ class CustomerProfile extends Model
         'gender',
     ];
     public function customer(){
-        return $this->belongsTo(Customers::class);
+        return $this->belongsTo(Customers::class,'customer_id');
     }
 }

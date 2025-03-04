@@ -100,7 +100,14 @@ Route::prefix('v1')->group(function () {
 
         Route::post('/register',[CustomerController::class,'register']);
         Route::post('/login',[CustomerController::class,'login']);
+        Route::post( '/add-profile',[CustomerController::class,'addProfile'])->middleware('auth:sanctum');
+        Route::delete('/delete-profile',[CustomerController::class,'destroyProfiles'])->middleware('auth:sanctum');
+        Route::get('/profile',[CustomerController::class,'getProfile'])->middleware('auth:sanctum');
 
 
+        Route::post('/address',[CustomerController::class,'createAddress'])->middleware('auth:sanctum');
+        Route::put('/address',[CustomerController::class,'updateAddress'])->middleware('auth:sanctum');
+        Route::delete('/address',[CustomerController::class,'deleteAddress'])->middleware('auth:sanctum');
+        Route::get('/address', [CustomerController::class,'index'])->middleware('auth:sanctum');
     });
 });

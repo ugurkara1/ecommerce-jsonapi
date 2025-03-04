@@ -45,6 +45,38 @@ class CategoryController extends Controller
         }
     }*/
 
+    public function getCategory(){
+        try{
+            // Parent kategorileri al, her biri için alt kategoriler ile birlikte
+
+            $categories=Categories::whereNull("parent_category_id")->with(['children'=>function($query){//parent kategoriler
+                $query->orderBy('name');//çocuk kategoriler sıralama
+
+            }])
+            ->orderBy('name') //parent kategoriler sıralama
+            ->get();
+            //eğer kategori yoksa
+            if($categories->isEmpty()){
+                return response()->json([
+                    'success'=>false,
+                    'message'=> __('messages.category_not_found')
+
+                ],404);
+            }
+            return response()->json([
+                'success' => true,
+                'message' => __('messages.category_list'),
+                'data' => $categories,
+            ], 200);
+
+
+        }catch(\Exception $e){
+            return response()->json([
+                'success'=> false,
+                'message'=> $e->getMessage()
+            ],500);
+        }
+    }
     public function index(Request $request){
         try{
             $category=Categories::all();

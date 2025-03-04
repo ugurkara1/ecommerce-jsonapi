@@ -5,11 +5,36 @@ namespace App\Http\Controllers;
 use App\Models\Brands;
 use Illuminate\Support\Facades\Validator;
 use Spatie\QueryBuilder\QueryBuilder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\Request;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class BrandController extends Controller
 {
+    /*
+
+    public function index(Request $request){
+        try{
+            $brands=Cache::remember('brand_list',60,function(){
+                return Brands::select('id','name','logo_url')->get();
+            });
+
+            return response()->json([
+                'success'=> true,
+                'message'=>'Markalar başarıyla listelendi',
+                'data'=> $brands
+            ],200);
+        }catch(\Exception $e){
+            return response()->json([
+                'success' => false,
+                'message' => 'Bir hata oluştu: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    */
+
+
     //marka add
     public function create(Request $request){
         //Yetki
@@ -59,12 +84,12 @@ class BrandController extends Controller
     //Tüm markaları listeleme
     public function getBrands(Request $request){
         $user=$request->user();
-        if(!$user->hasPermissionTo('manage brands')){
+        /*if(!$user->hasPermissionTo('manage brands')){
             return response()->json([
                 'success'=>false,
                 'message'=> __('messages.unauthorized')
             ],403);
-        }
+        }*/
         try{
             $brands = Brands::all();
             return response()->json([
@@ -82,12 +107,12 @@ class BrandController extends Controller
     //Belirli markayı gösterme spatie/query ile
     public function show(Request $request){
         $user = $request->user();
-        if (!$user->hasPermissionTo('manage brands')) {
+        /*if (!$user->hasPermissionTo('manage brands')) {
             return response()->json([
                 'success' => false,
                 'message' => __('messages.unauthorized')
             ], 403);
-        }
+        }*/
 
         try {
             $brands = QueryBuilder::for(Brands::class)

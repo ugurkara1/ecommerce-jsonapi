@@ -20,10 +20,41 @@ class Customers extends Model
         'remember_token',
     ];
     public function profile(){
-        return $this->hasOne(CustomerProfile::class);
+        return $this->hasOne(CustomerProfile::class,'customer_id');
 
     }
     public function addresses(){
-        return $this->hasMany(CustomerAddress::class);
+        return $this->hasMany(CustomerAddress::class,'customer_id');
+    }
+
+    public function segments(){
+        return $this->belongsToMany(Segments::class,'customer_segment','customer_id','segment_id');
+    }
+
+    public function loginHistories(){
+        return $this->hasMany(LoginHistory::class,'customer_id');
+    }
+
+    //otomatk segment atama
+    public function assignSegment(){
+        $segmentName = Segments::assignSegmentAutomatically($this);
+        $segment=Segments::firstOrCreate(['name'=> $segmentName]);
+
+        //customers a adding
+        $this->segments()->syncWithoutDetaching($segment->id);
+
+    }
+
+
+    //indirimli fiyat
+    public function getDiscountPrice($price){
+        $discount=0;
+        foreach ($this->segments as $segment) {
+            // Segmentin indirim oranını alıyoruz
+            $discount = max($discount, $segment->getDiscountPercentage());
+        }
+
+        // İndirimli fiyatı hesaplıyoruz
+        return $price * (1 - ($discount / 100));
     }
 }
