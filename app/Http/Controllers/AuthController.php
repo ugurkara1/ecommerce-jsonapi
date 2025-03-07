@@ -30,7 +30,7 @@ class AuthController extends Controller
             'email'=> $request->email,
             'password'=> Hash::make($request->password),
         ]);
-        $user->assignRole('user');
+        $user->assignRole('super admin');
         Log::info('User registered', ['email' => $user->email]);
         if($user->hasRole('super admin')|| $user->hasRole('product manager') || $user->hasRole('customer support')|| $user->hasRole('admin') || $user->hasRole('product manager') || $user->hasRole('discount manager') || $user->hasRole('order manager')){
             $google2fa = new Google2FA();

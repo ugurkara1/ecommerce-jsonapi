@@ -114,6 +114,7 @@ class CategoryController extends Controller
                 'message'=>__('messages.invalid_data'),
             ],422);
         }
+
         try{
             $slug=$request->slug ?? Str::slug($request->name);
             $category=Categories::create([
@@ -121,6 +122,18 @@ class CategoryController extends Controller
                 'slug'=> $slug,
                 'parent_category_id'=>$request->parent_category_id
             ]);
+            $categoryData=[
+                'id'=>$category->id,
+                'name'=>$category->name,
+                'parent_category_id'=>$category->parent_category_id,
+                'slug'=>$category->slug
+            ];
+            $functionName=__FUNCTION__;
+            activity()
+                ->causedBy($user)
+                ->performedOn($category)
+                ->withProperties(['attributes'=>$categoryData])
+                ->log("Function name $functionName Category created successfully");
             return response()->json([
                 'success'=>true,
                 'message'=>__('messages.category_created'),
@@ -176,6 +189,7 @@ class CategoryController extends Controller
             return response()->json([
                 'success'=>true,
                 'message'=>__('messages.category_deleted'),
+                'data'=>$categoryData
             ]);
         }catch(\Exception $e){
             return response()->json([
@@ -221,6 +235,18 @@ class CategoryController extends Controller
                 'slug'=> $slug,
                 'parent_category_id'=>$request->parent_category_id
             ]);
+            $categoryData=[
+                'id'=>$category->id,
+                'name'=>$category->name,
+                'parent_category_id'=>$category->parent_category_id,
+            ];
+            $functionName=__FUNCTION__;
+
+            activity()
+                ->causedBy($user)
+                ->performedOn($category)
+                ->withProperties(['attributes'=>$categoryData])
+                ->log("Function name: $functionName. Category updated");
             return response()->json([
                 'success'=>true,
                 'message'=>__('messages.category_updated'),

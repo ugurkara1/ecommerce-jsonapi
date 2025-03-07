@@ -51,7 +51,7 @@ class AttributeValuesController extends Controller
             ], 500);
         }
     }
-    public function index(Attributes $attribute)
+    public function getAttrValue(Attributes $attribute)
     {
         try{
             $values=$attribute->values()
@@ -69,6 +69,25 @@ class AttributeValuesController extends Controller
             ], 500);
         }
     }
+    public function index(){
+        $attributeValues = AttributeValues::with('attribute')->get()
+            ->groupBy('attribute_id')
+            ->map(function($group) {
+                // İlk kayıttan attribute verilerini alıyoruz
+                $attribute = $group->first()->attribute;
+                return [
+                    'attribute' => $attribute,
+                    'values' => $group->pluck('value')
+                ];
+            });
+
+        return response()->json([
+            'message' => __('messages.attrValue_listed'),
+            'data' => $attributeValues
+        ], 200);
+    }
+
+
     public function show(Attributes $attribute,AttributeValues $value){
         try{
             if($value->attribute_id !== $attribute->id){

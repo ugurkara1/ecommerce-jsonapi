@@ -34,6 +34,16 @@ class Customers extends Model
     public function loginHistories(){
         return $this->hasMany(LoginHistory::class,'customer_id');
     }
+    public function payment(){
+        return $this->hasMany(Payment::class,'customer_id');
+    }
+    public function order(){
+        return $this->hasMany(Order::class,'customer_id');
+    }
+
+    public function invoices(){
+        return $this->hasMany(Invoices::class,'customer_id');
+    }
 
     //otomatk segment atama
     public function assignSegment(){

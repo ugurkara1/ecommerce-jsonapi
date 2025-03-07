@@ -39,4 +39,7 @@ class Products extends Model
     /*public function qrCodes(){
         return $this->hasMany(ProductQrCodes::class,'product_id');
     }*/
+    public function orderProducts(){
+        return $this->hasMany(OrderProducts::class,'product_id');
+    }
 }
