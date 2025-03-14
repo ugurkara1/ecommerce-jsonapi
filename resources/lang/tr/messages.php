@@ -52,5 +52,28 @@ return [
     'product_variant_retrieved' => 'Ürün varyantı başarıyla alındı.',
     'qr_code_created'=> 'Qr kodu başarıyla oluşturuldu',
     'qr_code_deleted'=> 'Qr kodu başarıyla silindi',
+    'order_listed'=>'Siparişler listelendi',
+    'order_not_found'=>'Siparişler bulunamadı',
+    'created_order'=>'Sipariş eklendi',
+    'only_allowed_in_creation_phase'=>'Yalnızca oluşturma aşamasında izin veriliyor.',
+    'order_paymented'=>'Ödeme işlemi gerçekleştirilecek.',
+    'allowed_only_at_order_confirmation_phase'=>'Yalnızca Sipariş Onayı aşamasında izin veriliyor',
+    'order_confirmed_and_invoice_created'=>'Sipariş onaylandı ve fatura oluşturuldu',
+    'allowed_only_at_order_prepare_phase'=>'Sipariş hazırlama aşamasında izin verildi',
+    'order_prepared'=>'Sipariş hazırlandı',
+    'allowed_only_at_order_delivery_stage'=>'yalnızca_sipariş_teslimat_aşamasında_izin_verildi',
+    'order_delivered'=>'Sipariş teslim edildi',
+    'orderAddress_listed'=>'Adresler listelendi',
+    'orderAddress_showed'=>'Adres gösterildi',
+    'created_orderAddresses'=>'Adres başarıyla oluşturuldu',
+    'orderAddress_not_found'=>'Adres bulunamadı',
+    'orderAddress_updated'=>'Adres güncellendi',
+    'order_deleted'=>'Sipariş başarıyla silindi',
+    'order_product_listed'=>'Siparişler başarıyla listelendi',
+    'order_product_showed'=>'Sipariş başarıyla gösterildi',
+    'stock_not_found'=>'Stok bulunamadı',
+    'order_product_created'=>'Sipariş başarıyla oluşturuldu',
+
+
 
 ];

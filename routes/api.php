@@ -18,6 +18,7 @@ use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\InvoicesController;
 use App\Models\Brands;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -108,31 +109,49 @@ Route::prefix('v1')->group(function () {
     Route::delete('/payment',[PaymentController::class,'destroy'])->middleware('auth:sanctum');
 
 
+    //CRUD campaigns
     Route::get('/campaigns',[CampaignController::class,'index']);
     Route::post('/campaigns',[CampaignController::class,'store'])->middleware('auth:sanctum');
     Route::get('/campaigns/{id}',[CampaignController::class,'show']);
     Route::put('/campaigns/{id}',[CampaignController::class,'update'])->middleware('auth:sanctum');
     Route::delete('/campaigns/{id}',[CampaignController::class,'destroy'])->middleware('auth:sanctum');
 
+    //CRUD orders
     Route::get('/orders',[OrderController::class,'index']);
     Route::post('/orders',[OrderController::class,'store'])->middleware('auth:sanctum');
     Route::put('/orders/{id}',[OrderController::class,'update'])->middleware('auth:sanctum');
     Route::delete('orders/{id}',[OrderController::class,'destroy'])->middleware('auth:sanctum');
+    Route::put('/orderStatus/{id}',[OrderController::class,'updateStatus'])->middleware('auth:sanctum');
+    Route::get('/orderFilter',[OrderController::class,'OrderFilter']);
+    //Sipariş Süreçleri
+    Route::post('/orderPayment/{id}',[OrderController::class,'paymentOrder'])->middleware('auth:sanctum'); //Ödeme işlemine geçis
+    Route::post('/confirmOrder/{id}',[OrderController::class,'confirmOrder'])->middleware('auth:sanctum'); //Siparis Onay
+    Route::put('/orderPreparing/{id}',[OrderController::class,'orderPreparing'])->middleware('auth:sanctum'); //Siparis Hazırlandı Kargoya Teslim
+    Route::put('/orderDelivery/{id}',[OrderController::class,'orderDelivered'])->middleware('auth:sanctum'); //Siparis Teslim edildi
 
+
+
+    //CRUD orderAddress
     Route::post('/orderAddress',[OrderAdressesController::class,'store'])->middleware('auth:sanctum');
     Route::put('/orderAddress/{id}',[OrderAdressesController::class,'update'])->middleware('auth:sanctum');
     Route::delete('/orderAddress/{id}',[OrderAdressesController::class,'destroy'])->middleware('auth:sanctum');
     Route::get('/orderAddress',[OrderAdressesController::class,'index']);
     Route::get('/orderAddress/{id}',[OrderAdressesController::class,'show']);
 
-
+    //CRUD OrderProduct
     Route::post('/orderProduct',[OrderProductController::class,'store'])->middleware('auth:sanctum');
     Route::put('/orderProduct/{id}',[OrderProductController::class,'update'])->middleware('auth:sanctum');
     Route::get('/orderProduct',[OrderProductController::class,'index']);
     Route::get('/orderProduct/{id}',[OrderProductController::class,'show']);
     Route::delete('/orderProduct/{id}',[OrderProductController::class,'destroy'])->middleware('auth:sanctum');
 
-
+    //CRUD Invoices
+    Route::post('/invoices',[InvoicesController::class,'store'])->middleware('auth:sanctum');
+    Route::get('/invoices',[InvoicesController::class,'index'])->middleware('auth:sanctum');
+    Route::get('/invoices/{id}',[InvoicesController::class,'show'])->middleware('auth:sanctum');
+    Route::put('/invoices/{id}',[InvoicesController::class,'update'])->middleware('auth:sanctum');
+    Route::delete('/invoices/{id}',[InvoicesController::class,'destroy'])->middleware('auth:sanctum');
+    Route::post('/invoices/{id}/send-email', [InvoicesController::class, 'sendInvoiceEmail']);
 
 
 });

@@ -13,6 +13,7 @@ class Invoices extends Model
         "order_id",
         "customer_id",
         "invoice_number",
+        "invoice_date",
         "billing_address",
         "tax_amount",
         "total_amount",

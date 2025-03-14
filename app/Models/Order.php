@@ -10,6 +10,7 @@ class Order extends Model
     protected $table="orders";
 
     protected $fillable=[
+        "order_number",
         "customer_id",
         "full_name",
         "email",
@@ -17,7 +18,6 @@ class Order extends Model
         "payment_id",
         "campaign_id",
         "order_date",
-        "order_status",
         "currency_code",
         "currency_rate",
         "subtotal",
@@ -27,6 +27,7 @@ class Order extends Model
         "shipping_tracking_number",
         "shipment_date",
         "delivery_date",
+        "return_code"
     ];
 
     public function customer(){
@@ -34,7 +35,7 @@ class Order extends Model
     }
 
     public function payment(){
-        return $this->hasOne(Payment::class,'payment_id');
+        return $this->belongsTo(Payment::class,'payment_id');
     }
 
     public function campaigns(){
@@ -58,6 +59,9 @@ class Order extends Model
 
     public function orders(){
         return $this->hasOne(Order::class,'order_id');
+    }
+    public function orderProcesses(){
+        return $this->hasMany(orderProcesses::class,'order_id');
     }
 
 }

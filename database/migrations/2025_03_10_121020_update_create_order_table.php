@@ -11,8 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('discounts', function (Blueprint $table) {
-            $table->enum('applies_to', ['all', 'categories', 'products', 'variants', 'segments'])->change();
+        Schema::table('orders', function (Blueprint $table) {
+            //
+            $table->string('order_number')->unique()->after('id');
         });
     }
 
@@ -21,8 +22,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('discounts', function (Blueprint $table) {
-            $table->enum('applies_to', ['all', 'categories', 'products', 'variants'])->change();
+        Schema::table('orders', function (Blueprint $table) {
+            //
+            $table->dropColumn('order_number');
         });
     }
 };

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Order;
 
 class PaymentController extends Controller
 {
@@ -38,13 +39,14 @@ class PaymentController extends Controller
     }
     public function store(Request $request){
 
-        $customerId=$request->user()->id;
+        //$customerId=$request->user()->id;
 
 
         $validator=Validator::make($request->all(), [
             //'customer_id'=>'required|exists:customers,id',
+            'order_id'=>'required|exists:orders,id',
             'payment_method'=> 'sometimes|required|in:credit_cart,paypal,cash_on_delivery',
-            'amount'=> 'required|numeric',
+            //'amount'=> 'required|numeric',
             'payment_status'=> 'required|in:pending,completed,failed,renfunded',
             'payment_date'=> 'required|date',
         ]);
@@ -57,10 +59,25 @@ class PaymentController extends Controller
         }
 
         $data=$validator->validated();
-        $data['customer_id'] = $customerId;
+        $order=Order::find($data['order_id']);
+        $currentProcess=$order->orderProcesses()->latest()->first();
+        if(!$currentProcess || $currentProcess->status!="Ödeme İşlemi"){
+            return response()->json([
+                'success'=>false,
+                'message'=>__('messages.only_allowed_in_creation_phase')
+            ],403);
+        }
+        $data['amount']=$order->total_amount;
+        $data['customer_id'] = $order->customer_id;
 
+        $order->orderProcesses()->update([
+            'status'=>'Sipariş Onayı',
+            'description'=>'Siparişiniz onaylandı'
+        ]);
         $payment=Payment::create($data);
-
+        $order->update([
+            'payment_id'=>$payment->id,
+        ]);
         return response()->json([
             'success'=>true,
             'message'=>__('messages.payment_successfully'),
@@ -68,6 +85,8 @@ class PaymentController extends Controller
         ],200);
 
     }
+
+
 
     public function update(Request $request, $id){
         $user=$request->user();

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\Log;
 
 class Customers extends Model
 {
@@ -45,26 +46,71 @@ class Customers extends Model
         return $this->hasMany(Invoices::class,'customer_id');
     }
 
-    //otomatk segment atama
-    public function assignSegment(){
-        $segmentName = Segments::assignSegmentAutomatically($this);
-        $segment=Segments::firstOrCreate(['name'=> $segmentName]);
 
-        //customers a adding
-        $this->segments()->syncWithoutDetaching($segment->id);
+    public function assignSpendingSegments(){
+        $total = $this->order()->sum('total_amount');
+        Log::info("Toplam harcama: " . $total);
 
-    }
+        $tiers = [
+            'VIP' => 1000000,
+            'Gold' => 500000,
+            'Silver' => 200000,
+            'Bronze' => 0,
+        ];
 
+        $selectedSegmentName = 'Bronze';
 
-    //indirimli fiyat
-    public function getDiscountPrice($price){
-        $discount=0;
-        foreach ($this->segments as $segment) {
-            // Segmentin indirim oranını alıyoruz
-            $discount = max($discount, $segment->getDiscountPercentage());
+        foreach ($tiers as $name => $minAmount) {
+            if ($total >= $minAmount) {
+                $selectedSegmentName = $name;
+                break;
+            }
         }
 
-        // İndirimli fiyatı hesaplıyoruz
-        return $price * (1 - ($discount / 100));
+        Log::info("Seçilen segment: " . $selectedSegmentName);
+
+        // Müşterinin eski segmentlerini kaldır
+        $spendingSegmentIds = Segments::whereIn('name', array_keys($tiers))->pluck('id');
+        Log::info("Kaldırılacak segment ID'leri: " . json_encode($spendingSegmentIds));
+        $this->segments()->detach($spendingSegmentIds);
+
+        // Yeni segment ekle
+        if ($selectedSegment = Segments::where('name', $selectedSegmentName)->first()) {
+            Log::info("Yeni segment ID: " . $selectedSegment->id);
+            $this->segments()->attach($selectedSegment->id);
+        } else {
+            Log::info("Segment bulunamadı: " . $selectedSegmentName);
+        }
     }
+
+
+    public function getDiscountedPriceForProduct($product)
+    {
+        $basePrice = $product->price;
+
+        // Müşterinin varsayılan segmentini alıyoruz (her müşterinin bir segmenti olduğunu varsayıyoruz)
+        $segment = $this->segments()->first();
+        if (!$segment) {
+            return $basePrice;
+        }
+
+        // Aktif, segment bazlı indirimi sorguluyoruz
+        $discount = \App\Models\Discounts::where('is_active', true)
+                    ->where('applies_to', 'segments')
+                    ->whereHas('segments', function($query) use ($segment) {
+                        $query->where('id', $segment->id);
+                    })->orderByDesc('value')->first();
+
+        if (!$discount) {
+            return $basePrice;
+        }
+
+        // İndirim tipine göre nihai fiyat hesaplaması
+        if ($discount->discount_type === 'percentage') {
+             return round($basePrice * (1 - $discount->value / 100), 2);
+        } else { // 'fixed' tipindeki indirim için
+            return max(round($basePrice - $discount->value, 2), 0);
+        }
+    }
+
 }

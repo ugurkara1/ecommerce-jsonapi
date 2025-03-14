@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\OrderAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use App\Models\Order;
 
 class OrderAdressesController extends Controller
 {
@@ -15,7 +16,7 @@ class OrderAdressesController extends Controller
             'success'=>true,
             'message'=>__('messages.orderAddress_listed'),
             'data'=>$orderAddress
-        ]);
+        ],200);
     }
     public function show($id){
         $orderAddress=OrderAddress::with('orders')->findOrFail($id);
@@ -23,7 +24,7 @@ class OrderAdressesController extends Controller
             'success'=>true,
             'message'=>__('messages.orderAddress_showed'),
             'data'=>$orderAddress
-        ]);
+        ],200);
     }
     public function store(Request $request){
         $user=$request->user();
@@ -53,6 +54,14 @@ class OrderAdressesController extends Controller
             ],422);
         }
         $data=$validator->validated();
+        $order=Order::find($data['order_id']);
+        $currentProcess=$order->orderProcesses()->latest()->first();
+        if(!$currentProcess || $currentProcess->status != 'Sipariş Oluşturma'){
+            return response()->json([
+                'success'=>false,
+                'message'=>__('messages.only_allowed_in_creation_phase')
+            ],403);
+        }
         $orderAddresses=OrderAddress::create($data);
 
 
@@ -184,13 +193,14 @@ class OrderAdressesController extends Controller
                 'success'=>true,
                 'data'=>$orderAddress,
                 'messages'=>__('messages.order_deleted')
-            ]);
+            ],200);
 
         } catch(\Exception $e) {
             return response()->json([
                 'success'=>false,
-                'message'=>__('messages.unauthorized')
-            ]);
+                'message'=>__('messages.service_error'),
+                'errors'  => $e->getMessage()
+            ],500);
         }
     }
 

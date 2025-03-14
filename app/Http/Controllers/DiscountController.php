@@ -36,7 +36,7 @@ class DiscountController extends Controller
             'value'=>'sometimes|required|numeric|min:0',
             'start_date'=> 'nullable|date',
             'end_date'=> 'nullable|date',
-            'applies_to'=> 'sometimes|required|in:all,categories,products,variants,brands',
+            'applies_to'=> 'sometimes|required|in:all,categories,products,variants,brands,segments',
             'is_active'=> 'sometimes|boolean',
             'category_ids'=> 'required_if:applies_to,categories|array',
             'category_ids.*'=> 'exists:categories,id',
@@ -45,7 +45,11 @@ class DiscountController extends Controller
             'variant_ids'=> 'required_if:applies_to,variants|array',
             'variant_ids.*'=> 'exists:product_variants,id',
             'brand_ids'=>'required_if:applies_to,brands|array',
-            'brands_ids.*'=>'exists:brands,id'
+            'brands_ids.*'=>'exists:brands,id',
+            'segment_ids'=>'required_if:applies_to,segments|array',
+            'segments_ids.*'=>'exists:segments,id',
+
+
         ]);
 
         if($validator->fails()){
@@ -86,6 +90,10 @@ class DiscountController extends Controller
         else if($data['applies_to'] === 'brands'&& isset($data[ 'brand_ids'])){
             $discount->brands()->sync($data['brand_ids']);
             $this->updateDiscountPricesByBrands($data['brand_ids'],$discount);
+        }
+        else if($data['applies_to']==='segments' && isset($data['segment_ids'],$discount)){
+            $discount->segments()->sync($data['segment_ids']);
+            //$this->updateDiscountPricesBySegments($discount);
         }
 
         return response()->json([
@@ -143,7 +151,35 @@ class DiscountController extends Controller
         foreach ($variants as $variant) {
             $this->applyDiscountToVariant($variant, $discount);
         }
+
     }
+    /*
+    // Yeni metod: Segmente bağlı indirim tüm ürün, kategori, marka ve varyantlara uygulanır.
+    private function updateDiscountPricesBySegments($discount){
+        $products = Products::all();
+        foreach ($products as $product){
+            // Ürün için indirim hesaplama
+            if ($discount->discount_type === 'percentage') {
+                $discountedPrice = $product->price * (1 - $discount->value / 100);
+            } else {
+                $discountedPrice = max($product->price - $discount->value, 0);
+            }
+            $product->update(['discount_price' => $discountedPrice]);
+
+            // Ürüne ait varyantlar varsa indirim hesapla
+            if ($product->variants && $product->variants->isNotEmpty()){
+                foreach ($product->variants as $variant){
+                    if ($discount->discount_type === 'percentage') {
+                        $variantDiscountedPrice = $variant->price * (1 - $discount->value / 100);
+                    } else {
+                        $variantDiscountedPrice = max($variant->price - $discount->value, 0);
+                    }
+                    $variant->update(['discount_price' => $variantDiscountedPrice]);
+                }
+            }
+        }
+    }
+    */
 
     private function applyDiscount($product, $discount) {
         if ($discount->discount_type === 'percentage') {
@@ -195,9 +231,9 @@ class DiscountController extends Controller
             'name'=> 'required|string|max:255',
             'discount_type'=>'sometimes|required|in:percentage,fixed,buy_x_get_y',
             'value'=>'sometimes|required|numeric|min:0',
-            'star_date'=> 'nullable|date',
+            'start_date'=> 'nullable|date',
             'end_date'=> 'nullable|date',
-            'applies_to'=> 'sometimes|required|in:all,categories,products,variants',
+            'applies_to'=> 'sometimes|required|in:all,categories,products,variants,brands,segments',
             'is_active'=> 'sometimes|boolean',
             'category_ids'=> 'required_if:applies_to,categories|array',
             'category_ids.*'=> 'exists:categories,id',
@@ -205,6 +241,10 @@ class DiscountController extends Controller
             'product_ids.*'=> 'exists:products,id',
             'variant_ids'=> 'required_if:applies_to,variants|array',
             'variant_ids.*'=> 'exists:product_variants,id',
+            'brand_ids'=>'required_if:applies_to,brands|array',
+            'brands_ids.*'=>'exists:brands,id',
+            'segment_ids'=>'required_if:applies_to,segments|array',
+            'segments_ids.*'=>'exists:segments,id',
         ]);
 
         if($validator->fails()){
@@ -241,6 +281,10 @@ class DiscountController extends Controller
             else if($data['applies_to'] === 'variants'&& isset($data['variant_ids'])){
                 $discount->variants()->sync($data['variant_ids']);
                 $this->updateDiscountPricesByVariants($data['variant_ids'], $discount);
+            }
+            else if($data['applies_to'] === 'segments' && isset($data['segment_ids'])){
+                $discount->segments()->sync($data['segment_ids']);
+                //$this->updateDiscountPricesBySegments($discount);
             }
 
         }
@@ -309,11 +353,25 @@ class DiscountController extends Controller
                     }
 
                 }
+                break;
             case 'variants':
                 foreach($discount->variants as $variant){
                     $variant->update(['discount_price'=>null]);
                 }
                 break;
+/*
+            case 'segments':
+                // Segmente bağlı indirim iptalinde tüm ürün ve varyantların discount_price alanı temizlenir.
+                $products = Products::all();
+                foreach($products as $product){
+                    $product->update(['discount_price' => null]);
+                }
+                $variants = ProductVariants::all();
+                foreach($variants as $variant){
+                    $variant->update(['discount_price' => null]);
+                }
+                break;
+*/
             default:
                 break;
         }

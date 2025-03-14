@@ -10,9 +10,10 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.1",
         "jenssegers/agent": "^2.6",
         "laravel-json-api/laravel": "^5.0",
-        "laravel/framework": "^11.31",
+        "laravel/framework": "*",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.18",
         "laravel/tinker": "^2.9",
@@ -20,7 +21,8 @@
         "rinvex/countries": "^9.0",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-activitylog": "^4.10",
-        "spatie/laravel-permission": "^6.15",
+        "spatie/laravel-pdf": "^1.5",
+        "spatie/laravel-permission": "^6.16",
         "spatie/laravel-query-builder": "^6.3"
     },
     "require-dev": {

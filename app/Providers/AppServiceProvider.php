@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
+use App\Observers\OrderObserver;
+use App\Models\Order;
 
 
 class AppServiceProvider extends ServiceProvider
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Add explicit model binding for 'role' to Spatie's Role model
         Route::model('role', Role::class);
+        Order::observe(OrderObserver::class);
 
     }
 }
