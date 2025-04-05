@@ -8,11 +8,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\ProductVariants;
 use App\Models\Campaigns;
+use App\Models\ProductVariantRegion;
 
 class OrderProductController extends Controller
 {
     //
+    public function __construct()
+    {
+        // Tüm endpointlere erişim yalnızca "super admin", "admin" ve "order manager" rollerine sahip kullanıcılarla sınırlandırıldı.
+        $this->middleware('role:super admin|admin|order manager');
+    }
     public function index(){
+
         $orderProduct=OrderProducts::with('variant','order')->get();
         return response()->json([
             'success'=>true,
@@ -22,6 +29,7 @@ class OrderProductController extends Controller
     }
 
     public function show($id){
+
         $orderProduct = OrderProducts::with('variant', 'order')->findOrFail($id);
         return response()->json([
             'success' => true,
@@ -31,13 +39,7 @@ class OrderProductController extends Controller
     }
 
     public function store(Request $request){
-        $user=$request->user();
-        if(!$user->hasPermissionTo('manage orders')){
-            return response()->json([
-                'success'=>false,
-                'message'=>__('messages.unauthorized')
-            ],403);
-        }
+        $user = request()->user();
 
         $validator=Validator::make($request->all(),[
             'order_id'=>'required|exists:orders,id',
@@ -47,7 +49,8 @@ class OrderProductController extends Controller
             //'base_price'=>'required|numeric',
             //'sale_price'=>'nullable|numeric',
             'tax_rate'=>'nullable|numeric',//vergi oranı
-            'gift_package'=>'nullable|boolean'
+            'gift_package'=>'nullable|boolean',
+            'region_id'=>'nullable|exists:regions,id'
         ]);
 
         if($validator->fails()){
@@ -58,13 +61,23 @@ class OrderProductController extends Controller
         }
         $validatedData=$validator->validated();
         $order = Order::find($validatedData['order_id']);
-        $currentProcess=$order->orderProcesses()->latest()->first();
+        /*$currentProcess=$order->orderProcesses()->latest()->first();
         if(!$currentProcess || $currentProcess->status != 'Sipariş Oluşturma'){
             return response()->json([
                 'success'=>false,
                 'message'=>__('messages.only_allowed_in_creation_phase')
             ],403);
+        }*/
+        // Doğru ilişkiyi kullanarak
+        $currentProcess = $order->process; // OrderProcess nesnesi dönecektir.
+
+        if ($currentProcess && $currentProcess->name != "Order Creation") {
+            return response()->json([
+                'success' => false,
+                'message' => __('messages.only_allowed_in_creation_phase')
+            ], 403);
         }
+
         $variant=ProductVariants::findOrFail($validatedData['variant_id']);
 
         $validatedData['sku']=$variant->sku;
@@ -81,6 +94,45 @@ class OrderProductController extends Controller
                 'message'=>__('messages.stock_not_found')
             ]);
         }*/
+
+        if(isset($validatedData['region_id'])){
+            $regionalStock=ProductVariantRegion::where([
+                ['product_variant_id',$validatedData['variant_id']],
+                ['region_id',$validatedData['region_id']]
+            ])->first();
+            $validatedData['base_price']=$regionalStock->price;
+            $validatedData['sale_price']=$regionalStock->discount_price;
+            if(!$regionalStock){
+                return response()->json([
+                    'success' => false,
+                    'message' => __('messages.region_stock_not_found')
+                ], 404);
+            }
+            $stockUpdated=$regionalStock->stock - $validatedData['quantity'];
+            if ($stockUpdated < 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('messages.insufficient_stock')
+                ], 422);
+            }
+            $regionalStock->update(['stock'=>$stockUpdated]);
+        }else{
+            $validatedData['base_price']=$variant->price;
+            $validatedData['sale_price']=$variant->discount_price;
+                    // Varsayılan varyant stoğu kontrolü
+            $stockUpdated = $variant->stock - $validatedData['quantity'];
+
+            if ($stockUpdated < 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('messages.insufficient_stock')
+                ], 422);
+            }
+
+            // Varsayılan stok güncelleme
+            $variant->update(['stock' => $stockUpdated]);
+        }
+        /*
         $stockupdated=($variant->stock)-$validatedData['quantity'];
         if($stockupdated<0){
             return response()->json([
@@ -88,7 +140,7 @@ class OrderProductController extends Controller
                 'message'=>__('messages.stock_not_found')
             ],422);
         }
-        /*
+
         $variant->update([
             'stock'=>$stockupdated
         ]);
@@ -117,12 +169,6 @@ class OrderProductController extends Controller
         $user=$request->user();
         $orderProduct = OrderProducts::where('id',$id)->first();
 
-        if(!$user->hasPermissionTo('manage orders')){
-            return response()->json([
-                'success'=>false,
-                'message'=>__('messages.unauthorized')
-            ],403);
-        }
 
         $validator=Validator::make($request->all(),[
             'order_id'=>'required|exists:orders,id',
@@ -203,13 +249,8 @@ class OrderProductController extends Controller
         ]);
     }
     public function destroy(Request $request,$id){
-        $user=$request->user();
-        if(!$user->hasPermissionTo('manage orders')){
-            return response()->json([
-                'success'=>false,
-                'message'=>__('messages.unauthorized')
-            ],403);
-        }
+        $user = request()->user();
+
         try{
             $orderProduct=OrderProducts::where('id',$id)->first();
             if(!$orderProduct){
@@ -248,7 +289,7 @@ class OrderProductController extends Controller
                 'success'=>true,
                 'data'=>$orderProduct,
                 'message'=>__('messages.order_deleted')
-            ]);
+            ],200);
         }catch(\Exception $e){
             return response()->json([
                 'success'=>false,

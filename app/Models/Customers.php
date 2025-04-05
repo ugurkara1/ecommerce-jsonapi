@@ -82,6 +82,11 @@ class Customers extends Model
             Log::info("Segment bulunamadı: " . $selectedSegmentName);
         }
     }
+    public function assignSegment()
+    {
+        // Örneğin, basit bir mantık: toplam harcama kontrolü gibi
+        $this->assignSpendingSegments(); // veya kendi mantığınızı ekleyin
+    }
 
 
     public function getDiscountedPriceForProduct($product)

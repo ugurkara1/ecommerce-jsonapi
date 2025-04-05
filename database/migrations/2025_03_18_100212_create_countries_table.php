@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('discounts', function (Blueprint $table) {
-            //
-            $table->timestamp('created_at')->nullable();
-            $table->timestamp('updated_at')->nullable();
-
+        Schema::create('countries', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('code')->unique();
+            $table->timestamps();
         });
     }
 
@@ -24,10 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('discounts', function (Blueprint $table) {
-            //
-            $table->dropColumn(['created_at', 'updated_at']);
-
-        });
+        Schema::dropIfExists('countries');
     }
 };

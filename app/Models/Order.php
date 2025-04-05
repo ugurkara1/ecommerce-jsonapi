@@ -12,6 +12,7 @@ class Order extends Model
     protected $fillable=[
         "order_number",
         "customer_id",
+        "process_id",
         "full_name",
         "email",
         "phone_number",
@@ -27,9 +28,13 @@ class Order extends Model
         "shipping_tracking_number",
         "shipment_date",
         "delivery_date",
-        "return_code"
+        "return_code",
+        "current_status"
     ];
-
+    public function process()
+    {
+        return $this->belongsTo(OrderProcess::class, 'process_id');
+    }
     public function customer(){
         return $this->belongsTo(Customers::class,'customer_id');
     }
@@ -63,5 +68,15 @@ class Order extends Model
     public function orderProcesses(){
         return $this->hasMany(orderProcesses::class,'order_id');
     }
+
+    // Geçerli durum geçiş kuralları
+    public static $statusTransitions = [
+        'Order Creation' => ['Payment Process'],
+        'Payment Process' => ['Order Confirm'],
+        'Order Confirm' => ['Order Preparing'],
+        'Order Preparing' => ['Cargo'],
+        'Cargo' => ['Delivery'],
+        //'Delivery' => ['İade ve İptal Süreçler']
+    ];
 
 }

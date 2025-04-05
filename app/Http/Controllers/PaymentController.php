@@ -10,6 +10,12 @@ use App\Models\Order;
 class PaymentController extends Controller
 {
     //
+    public function __construct(){
+        // Yalnızca ödeme oluşturma, güncelleme, silme işlemleri için "super admin", "admin", "order manager" yetkisi
+        $this->middleware('role:super admin|admin|order manager')->only(['store', 'update', 'destroy']);
+        // Listeleme ve detay görüntüleme için müşteriler de dahil
+        $this->middleware('role:super admin|admin|order manager|customer')->only(['index', 'show']);
+    }
     public function index(){
         $payments=Payment::with('customer')->get();
         return response()->json([
@@ -22,12 +28,6 @@ class PaymentController extends Controller
     public function show(Request $request,$id){
 
         $user=$request->user();
-        if(!$user->hasPermissionTo('manage orders')){
-            return response()->json([
-                'success'=>false,
-                'message'=>__('messages.unauthorized'),
-            ]);
-        }
 
         $payments=Payment::with('customer')->findOrFail($id);
         return response()->json([
@@ -44,10 +44,10 @@ class PaymentController extends Controller
 
         $validator=Validator::make($request->all(), [
             //'customer_id'=>'required|exists:customers,id',
-            'order_id'=>'required|exists:orders,id',
+            'order_id' => 'required|exists:orders,id',
             'payment_method'=> 'sometimes|required|in:credit_cart,paypal,cash_on_delivery',
             //'amount'=> 'required|numeric',
-            'payment_status'=> 'required|in:pending,completed,failed,renfunded',
+            //'payment_status'=> 'required|in:pending,completed,failed,renfunded',
             'payment_date'=> 'required|date',
         ]);
         if($validator->fails()){
@@ -60,6 +60,7 @@ class PaymentController extends Controller
 
         $data=$validator->validated();
         $order=Order::find($data['order_id']);
+        /*
         $currentProcess=$order->orderProcesses()->latest()->first();
         if(!$currentProcess || $currentProcess->status!="Ödeme İşlemi"){
             return response()->json([
@@ -67,17 +68,32 @@ class PaymentController extends Controller
                 'message'=>__('messages.only_allowed_in_creation_phase')
             ],403);
         }
+        */
+        $currentProcess=$order->process;
+        if ($currentProcess && $currentProcess->name != "Payment Process") {
+            return response()->json([
+                'success' => false,
+                'message' => __('messages.only_allowed_in_creation_phase')
+            ], 403);
+        }
         $data['amount']=$order->total_amount;
         $data['customer_id'] = $order->customer_id;
 
+        /*
         $order->orderProcesses()->update([
             'status'=>'Sipariş Onayı',
             'description'=>'Siparişiniz onaylandı'
         ]);
+        */
         $payment=Payment::create($data);
         $order->update([
             'payment_id'=>$payment->id,
         ]);
+        activity()
+            ->causedBy($request->user())
+            ->performedOn($payment)
+            ->withProperties(['payment'=>$data])
+            ->log('Payment created successfully');
         return response()->json([
             'success'=>true,
             'message'=>__('messages.payment_successfully'),
@@ -90,14 +106,6 @@ class PaymentController extends Controller
 
     public function update(Request $request, $id){
         $user=$request->user();
-        if(!$user->hasPermissionTo('manage orders')){
-            return response()->json([
-                'success'=>false,
-                'message'=>__('messages.unauthorized'),
-                'errors'=>$user->errors()
-            ],403);
-        }
-
 
         $validator=Validator::make($request->all(), [
             'customer_id'=> 'required|exists:customers,id',
@@ -124,7 +132,11 @@ class PaymentController extends Controller
                 ],404);
             }
             $payment->update($validated);
-
+            activity()
+                ->causedBy($user)
+                ->performedOn($payment)
+                ->withProperties(['payment'=>$validated])
+                ->log('Payment updated successfully');
             return response()->json([
                 'success'=>true,
                 'message'=>__('messages.payment_updated'),
@@ -146,12 +158,7 @@ class PaymentController extends Controller
     public function destroy(Request $request, $id){
 
         $user=$request->user();
-        if(!$user->hasPermissionTo('manage orders')){
-            return response()->json([
-                'success'=>false,
-                'message'=>__('messages.unauthorized'),
-            ],403);
-        }
+
         try{
             $payment=Payment::where('id',$id)->first();
             if(!$payment){
@@ -178,7 +185,7 @@ class PaymentController extends Controller
                 'success'=>true,
                 'data'=>$payment,
                 'messages'=>__('messages.payment_deleted'),
-            ]);
+            ],200);
 
         }catch (\Exception $e) {
             return response()->json([

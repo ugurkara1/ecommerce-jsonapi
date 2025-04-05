@@ -10,18 +10,18 @@ use Illuminate\Support\Facades\Validator;
 
 class ProductImagesController extends Controller
 {
+
+    public function __construct()
+    {
+        $this->middleware('role:super admin|admin|product manager')->only(['store', 'destroy']);
+    }
     /**
      * Çoklu Resim Yükleme
      */
     public function store(Request $request, Products $product)
     {
-        $user=$request->user();
-        if(!$user->hasPermissionTo("manage product images")){
-            return response()->json([
-                'success'=>false,
-                'message'=>__('messages.unauthorized'),
-            ],401);
-        }
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'images' => 'required|array|max:10',
             'images.*' => 'image|mimes:jpg,png,webp|max:500',
@@ -86,13 +86,8 @@ class ProductImagesController extends Controller
      */
     public function destroy(Request $request)
     {
-        $user=$request->user();
-        if(!$user->hasPermissionTo("manage product images")){
-            return response()->json([
-                'success'=>false,
-                'message'=>__('messages.unauthorized'),
-            ],401);
-        }
+        $user = $request->user();
+
         $validator = Validator::make($request->all(), [
             'image_ids' => 'required|array|min:1',
             'image_ids.*' => 'exists:product_images,id'
@@ -122,11 +117,17 @@ class ProductImagesController extends Controller
                 ], 500);
             }
         }
+        activity()
+        ->causedBy($user)
+        ->performedOn($images->first()) // Koleksiyondan ilk öğeyi temsilci olarak kullanıyoruz
+        ->withProperties(['deleted_image_ids' => $request->image_ids])
+        ->log('Images deleted successfully');
+
 
         return response()->json([
             'success' => true,
             'message' => __('messages.images_deleted'),
             'deleted_count' => count($request->image_ids)
-        ]);
+        ],200);
     }
 }

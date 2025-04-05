@@ -73,4 +73,5 @@ return [
     'order_product_showed'     => 'Order product displayed successfully.',
     'stock_not_found'          => 'Stock not found.',
     'order_product_created'    => 'Order product created successfully.',
+    'insufficient_stock'=>'Stock not found'
 ];

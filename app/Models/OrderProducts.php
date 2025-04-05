@@ -19,7 +19,8 @@ class OrderProducts extends Model
         "tax_rate",
         "gift_package",
         "sku",
-        "qr_code"
+        "qr_code",
+        'region_id'
     ];
 
     public function variant(){
@@ -28,5 +29,7 @@ class OrderProducts extends Model
     public function order(){
         return $this->belongsTo(Order::class,'order_id');
     }
-
+    public function region(){
+        return $this->belongsTo(Regions::class,'region_id');
+    }
 }

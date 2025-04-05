@@ -34,4 +34,10 @@ class ProductVariants extends Model
     public function images(){
         return $this->hasMany(ProductImages::class,'variant_id');
     }
+    // app/Models/ProductVariants.php
+
+    public function regionPricing() {
+        return $this->hasMany(ProductVariantRegion::class, 'product_variant_id');
+    }
+
 }

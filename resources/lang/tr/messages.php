@@ -73,7 +73,7 @@ return [
     'order_product_showed'=>'Sipariş başarıyla gösterildi',
     'stock_not_found'=>'Stok bulunamadı',
     'order_product_created'=>'Sipariş başarıyla oluşturuldu',
-
+    'insufficient_stock'=>'Stok Yetersiz'
 
 
 ];

@@ -12,6 +12,10 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class ProductQrCodesController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('role:super admin|admin|product manager')->only(['store', 'destroy']);
+    }
     public function index($productVariantId)
     {
         $productVariant = ProductVariants::with("qrCodes")->findOrFail($productVariantId);
@@ -21,12 +25,6 @@ class ProductQrCodesController extends Controller
     public function store(Request $request, $product_variant_id)
     {
         $user = $request->user();
-        if (!$user->hasPermissionTo("manage products")) {
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.unauthorized'),
-            ], 401);
-        }
 
         $productVariant = ProductVariants::with('product')->findOrFail($product_variant_id);
 
@@ -60,17 +58,11 @@ class ProductQrCodesController extends Controller
             'qr_id' => $qrCode->id,
             'qr_data' => $qrCode->qr_data,
             'qr_image_url' => $qrCode->qr_image_url
-        ]);
+        ],201);
     }
     public function destroy(Request $request, $productVariantId,$qrCodeId)
     {
         $user = $request->user();
-        if (!$user->hasPermissionTo("manage products")) {
-            return response()->json([
-                'success' => false,
-                'message' => __('messages.unauthorized'),
-            ], 401);
-        }
 
         $qrCode = ProductQrCodes::where('product_variant_id', $productVariantId)
             ->findOrFail($qrCodeId);
@@ -79,7 +71,7 @@ class ProductQrCodesController extends Controller
         return response()->json([
             'success' => true,
             'message' => __('messages.qr_code_deleted'),
-        ]);
+        ],200);
     }
     public function show($productVariantId,$qrCodeId){
         $qrCode=ProductQrCodes::where('product_id',$productVariantId)->findOrFail($qrCodeId);

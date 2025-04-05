@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use PragmaRX\Google2FA\Google2FA;
 
@@ -57,23 +58,40 @@ class AuthController extends Controller
     }
     public function login(Request $request)
     {
+        // Rate limiting ayarları
+        $maxAttempts  = 5; //max deneme sayısı
+        $decayMinutes = 1; //1dk içinde deneme
+        $throttleKey  = Str::lower($request->input('email')) . '|' . $request->ip();
+
+        // Eğer çok fazla başarısız deneme varsa, 429 yanıtı dönüyoruz
+        if (RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
+            Log::warning('Too many login attempts for email: ' . $request->input('email'));
+            return response()->json(['message' => __('messages.too_many_attempts')], 429);
+        }
+
         $validator = Validator::make($request->all(), [
-            'email'=> 'required|email',
-            'password'=> 'required|string|min:6'
+            'email'    => 'required|email',
+            'password' => 'required|string|min:6'
         ]);
+
         if ($validator->fails()) {
-            Log::warning('Login failed: Validation error for email: ' . $request->email);
+            Log::warning('Login failed: Validation error for email: ' . $request->input('email'));
             return response()->json([
-                'message'=>__('messages.invalid_data'),
-                'errors'=>$validator->errors()
+                'message' => __('messages.invalid_data'),
+                'errors'  => $validator->errors()
             ], 400);
         }
 
         $user = User::where('email', $request->email)->first();
         if (!$user || !Hash::check($request->password, $user->password)) {
+            // Hatalı girişte rate limiter sayaç artışı
+            RateLimiter::hit($throttleKey, $decayMinutes * 60);
             Log::warning('Unauthorized login attempt for email: ' . $request->email);
             return response()->json(['message' => __('messages.invalid_credentials')], 401);
         }
+
+        // Başarılı girişte, rate limiter sayaç sıfırlanır
+        RateLimiter::clear($throttleKey);
         Log::info('Login successful for user: ' . $user->email);
 
         // Admin yetkileri kontrolü
@@ -81,7 +99,7 @@ class AuthController extends Controller
             // Eğer kullanıcıda google2fa_secret yoksa, oluşturuyoruz
             if (empty($user->google2fa_secret)) {
                 $google2fa = new Google2FA();
-                $secret = $google2fa->generateSecretKey();
+                $secret    = $google2fa->generateSecretKey();
                 $user->google2fa_secret = $secret;
                 $user->save();
                 Log::info('New OTP secret key generated for user: ' . $user->email);
@@ -98,18 +116,18 @@ class AuthController extends Controller
             );
 
             // Nonce oluşturma ve token payload
-            $nonce = Str::random(32);
+            $nonce   = Str::random(32);
             $payload = [
-                'id' => $user->id,
+                'id'    => $user->id,
                 'nonce' => $nonce,
             ];
             $base64Token = base64_encode(json_encode($payload));
 
             return response()->json([
-                'message' => __('messages.otp_required'),
-                'require_otp' => true,
-                'qr_code_url' => $qrCodeUrl,  // QR kodu kullanıcıya gösterilecek
-                'base64_token' => $base64Token,  // Her login işleminde farklı token
+                'message'      => __('messages.otp_required'),
+                'require_otp'  => true,
+                'qr_code_url'  => $qrCodeUrl,
+                'base64_token' => $base64Token,
             ], 200);
         }
 
@@ -117,7 +135,6 @@ class AuthController extends Controller
         $token = $user->createToken('ECommerce')->plainTextToken;
         return response()->json(['token' => $token], 200);
     }
-
 
     public function verifyOtp(Request $request){
         $request->validate([

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Repositories\OrderRepository;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\App;
@@ -10,7 +11,27 @@ use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Role;
 use App\Observers\OrderObserver;
 use App\Models\Order;
-
+use App\Contracts\BrandContract;
+use App\Contracts\CategoryContract;
+use App\Repositories\BrandRepository;
+use App\Repositories\CategoryRepository;
+use App\Repositories\ProductRepository;
+use App\Contracts\ProductContract;
+use App\Models\Attributes;
+use App\Repositories\AttributesRepository;
+use App\Contracts\AttributesContract;
+use App\Repositories\AttributeValuesRepository; // Added correct namespace
+use App\Models\AttributeValues;
+use App\Contracts\AttributeValuesContract; // Added correct namespace for AttributeValuesContract
+use App\Contracts\CampaignContract;
+use App\Contracts\InvoicesContract;
+use App\Contracts\OrderAddressesContract;
+use App\Contracts\OrderContract;
+use App\Contracts\ProductVariantContract;
+use App\Repositories\CampaignRepository; // Added correct namespace for CampaignRepository
+use App\Repositories\InvoicesRepository; // Added correct namespace for InvoicesRepository
+use App\Repositories\OrderAddressesRepository;
+use App\Repositories\ProductVariantRepository;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,6 +41,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         //
+        $this->app->bind(BrandContract::class, BrandRepository::class);
+        $this->app->bind(CategoryContract::class, CategoryRepository::class);
+        $this->app->bind(ProductContract::class, ProductRepository::class);
+        $this->app->bind(AttributesContract::class, AttributesRepository::class);
+        $this->app->bind(AttributeValuesContract::class, AttributeValuesRepository::class);
+        $this->app->bind(CampaignContract::class, CampaignRepository::class);
+        $this->app->bind(InvoicesContract::class, InvoicesRepository::class);
+        $this->app->bind(OrderContract::class, OrderRepository::class);
+        $this->app->bind(OrderAddressesContract::class,OrderAddressesRepository::class);
     }
 
     /**

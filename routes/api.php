@@ -22,6 +22,7 @@ use App\Http\Controllers\InvoicesController;
 use App\Models\Brands;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use PHPUnit\Framework\Attributes\Group;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -41,133 +42,165 @@ Route::prefix('v1')->group(function () {
     Route::post('/assign-role', [RoleController::class, 'assignRole'])->middleware('auth:sanctum');
     Route::post( '/create-permission', [RoleController::class,'createPermissions'])->middleware('auth:sanctum');
     //Brands crud
-    Route::post('/brands',[BrandController::class,'create'])->middleware('auth:sanctum');
-    Route::get('/brands', [BrandController::class,'getBrands'])->middleware('auth:sanctum');
-    Route::put('brands/{id}', [BrandController::class,'update'])->middleware('auth:sanctum');
-    Route::delete('brands/{id}', [BrandController::class,'destroy'])->middleware('auth:sanctum');
-    Route::get('/showbrands', [BrandController::class,'show'])->middleware('auth:sanctum');
-    Route::get('/superadmin',[SuperAdminController::class,'index'])->middleware('auth:sanctum');
-
+    Route::middleware('auth:sanctum')->prefix('brands')->group(function () {
+        Route::get('/', [BrandController::class, 'index']);
+        Route::post('/', [BrandController::class, 'store']);
+        Route::get('/{id}', [BrandController::class, 'show']);
+        Route::put('/{id}', [BrandController::class, 'update']);
+        Route::delete('/{id}', [BrandController::class, 'destroy']);
+    });
     //Categories crud
-    Route::post('/categories',[CategoryController::class,'create'])->middleware('auth:sanctum');
-    Route::delete('/categories/{id}',[CategoryController::class,'destroy'])->middleware('auth:sanctum');
-    Route::get('/categories',[CategoryController::class,'getCategory'])->middleware('auth:sanctum');
-    Route::put('/categories/{id}',[CategoryController::class,'update'])->middleware('auth:sanctum');
-    Route::get('/show/category',[CategoryController::class,'show'])->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->prefix('categories')->group(function () {
+        Route::get('/', [CategoryController::class, 'index']);
+        Route::post('/', [CategoryController::class, 'create']);
+        Route::get('/{id}', [CategoryController::class, 'show']);
+        Route::put('/{id}', [CategoryController::class, 'update']);
+        Route::delete('/{id}', [CategoryController::class, 'destroy']);
+    });
+    Route::middleware('auth:sanctum')->prefix('products')->group(function(){
+        Route::get('/',[ProductController::class,'index']);
+        Route::get('/{id}',[ProductController::class,'show']);
+        Route::post('/',[ProductController::class,'create']);
+        Route::put('/{id}',[ProductController::class,'update']);
+        Route::delete('/{id}',[ProductController::class,'destroy']);
+    });
+
+
 
     //Attributes crud
-    Route::get('/attributes',[AttributesController::class,'index'])->middleware('auth:sanctum');
-    Route::post('/attributes',[AttributesController::class,'store'])->middleware('auth:sanctum');
-    Route::put('/attributes/{id}',[AttributesController::class,'update'])->middleware('auth:sanctum');
-    Route::delete('/attributes/{id}',[AttributesController::class,'destroy'])->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->prefix('attributes')->group(function () {
+        Route::get('/', [AttributesController::class, 'index']);
+        Route::get('/{id}', [AttributesController::class, 'show']);
+        Route::post('/', [AttributesController::class, 'store']);
+        Route::put('/{id}', [AttributesController::class, 'update']);
+        Route::delete('/{id}', [AttributesController::class, 'destroy']);
+    });
 
     //attribute-values crud
-    Route::get('/attributes/{attribute}/attribute-values', [AttributeValuesController::class, 'getAttrValue'])->middleware('auth:sanctum');
-    Route::post('/attributes/{attribute}/attribute-values', [AttributeValuesController::class, 'store'])->middleware('auth:sanctum');
-    Route::put('/attributes/{attribute}/attribute-values/{value}', [AttributeValuesController::class, 'update'])->middleware('auth:sanctum');
-    Route::delete('/attributes/{attribute}/attribute-values/{value}', [AttributeValuesController::class, 'destroy'])->middleware('auth:sanctum');
-    Route::get('/attrValue',[AttributeValuesController::class,'index']);
-
+    Route::middleware('auth:sanctum')->prefix('attribute-values')->group(function () {
+        Route::get('/{id}', [AttributeValuesController::class, 'show']);
+        Route::post('/{id}', [AttributeValuesController::class, 'store']);
+        Route::put('/{valueId}', [AttributeValuesController::class, 'update']);
+        Route::delete('/{valueId}', [AttributeValuesController::class, 'delete']);
+        Route::get('/',[AttributeValuesController::class,'index']);
+    });
     //products crud
-    Route::post('/products', [ProductController::class,'store'])->middleware('auth:sanctum');
-    Route::get('/products', [ProductController::class,'index'])->middleware('auth:sanctum');
-    Route::get('/products/show/{id}', [ProductController::class,'show'])->middleware('auth:sanctum');
-    Route::delete('/products', [ProductController::class,'destroy'])->middleware('auth:sanctum');
-    Route::put('/products/{id}', [ProductController::class,'update'])->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->prefix('products')->group(function () {
+    /*
+        Route::get('/', [ProductController::class, 'index']);
+        Route::post('/', [ProductController::class, 'store']);
+        Route::get('/{id}', [ProductController::class, 'show']);
+        Route::put('/{id}', [ProductController::class, 'update']);
+        Route::delete('/{id}', [ProductController::class, 'destroy']);
 
-    //product-variants crud
-    Route::get('/products/{productId}/variants', [ProductVariantController::class, 'index'])->middleware('auth:sanctum');
-    Route::post('/products/{productId}/variants', [ProductVariantController::class,'store'])->middleware('auth:sanctum');
-    Route::get('/products/show/{productId}/variants/{variantId}', [ProductVariantController::class,'show'])->middleware('auth:sanctum');
-    Route::put('/products/{productId}/variants/{variantId}', [ProductVariantController::class,'update'])->middleware('auth:sanctum');
-    Route::delete('/products/{productId}/variants/{variantId}', [ProductVariantController::class,'destroy'])->middleware('auth:sanctum');
+        product Variants (alternatively, use dedicated prefix "productVariants")
 
+    */
+        Route::get('variant', [ProductVariantController::class, 'index']);
+        Route::post('/{productId}/variants', [ProductVariantController::class, 'store']);
+        Route::get('/show/{productId}/variants/{variantId}', [ProductVariantController::class, 'show']);
+        Route::put('/{productId}/variants/{variantId}', [ProductVariantController::class, 'update']);
+        Route::delete('/{productId}/variants/{variantId}', [ProductVariantController::class, 'destroy']);
+    });
+    // Variant Region
+    Route::middleware('auth:sanctum')->post('variants/{variantId}/region', [ProductVariantController::class, 'storeVariantRegion']);
 
-    //products-images crud
-    Route::post('/products/{product}/images', [ProductImagesController::class, 'store'])->middleware('auth:sanctum');
-    Route::delete('/product-images', [ProductImagesController::class, 'destroy'])->middleware('auth:sanctum');
-
-    //product-qr-codes crud
-    Route::post('/{productVariantId}/qr-codes', [ProductQrCodesController::class, 'store'])->middleware('auth:sanctum');
+    // Product Images & QR Codes
+    // -------------------------------
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/products/{product}/images', [ProductImagesController::class, 'store']);
+        Route::delete('/product-images', [ProductImagesController::class, 'destroy']);
+    });
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/{productVariantId}/qr-codes', [ProductQrCodesController::class, 'store']);
+        Route::delete('/{productVariantId}/qr-codes/{qrCodeId}', [ProductQrCodesController::class, 'destroy']);
+    });
     Route::get('/{productId}/qr-codes', [ProductQrCodesController::class, 'index']);
-    Route::delete('/{productVariantId}/qr-codes/{qrCodeId}', [ProductQrCodesController::class,'destroy'])->middleware('auth:sanctum');
 
 
     //discounts crud
-    Route::get('/discounts',[DiscountController::class,'index']);
-    Route::post('/discounts', [DiscountController::class,'store'])->middleware('auth:sanctum');
-    Route::put('/discounts/{discountId}', [DiscountController::class,'update'])->middleware('auth:sanctum');
-    Route::put('/discountsEnd/{discountId}', [DiscountController::class,'endDiscount    '])->middleware('endDiscount');
-    Route::delete('/discounts/{discountId}', [DiscountController::class,'destroy'])->middleware('auth:sanctum');
-    Route::get('/discounts/{discountId}', [DiscountController::class,'show'])->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->prefix('discounts')->group(function () {
+        Route::post('/', [DiscountController::class, 'create']);
+        Route::get('/', [DiscountController::class, 'index']);
+        Route::put('/End/{discountId}', [DiscountController::class, 'endDiscount']);
+        Route::put('/{discountId}', [DiscountController::class, 'update']);
+        Route::delete('/{discountId}', [DiscountController::class, 'delete']);
+        Route::get('/{discountId}', [DiscountController::class, 'show']);
+    });
+
 
     //payment crud
-    Route::post('/payment',[PaymentController::class,'store'])->middleware('auth:sanctum');
-    Route::get('/payment', [PaymentController::class,'index']);
-    Route::put('/payment/{id}', [PaymentController::class,'update'])->middleware('auth:sanctum');
-    Route::get('/payment/{id}', [PaymentController::class,'show'])->middleware('auth:sanctum');
-    Route::delete('/payment',[PaymentController::class,'destroy'])->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->prefix('payment')->group(function () {
+        Route::post('/', [PaymentController::class, 'store']);
+        Route::get('/', [PaymentController::class, 'index']);
+        Route::get('/{id}', [PaymentController::class, 'show']);
+        Route::put('/{id}', [PaymentController::class, 'update']);
+        Route::delete('/', [PaymentController::class, 'destroy']);
+    });
+
+
 
 
     //CRUD campaigns
-    Route::get('/campaigns',[CampaignController::class,'index']);
-    Route::post('/campaigns',[CampaignController::class,'store'])->middleware('auth:sanctum');
-    Route::get('/campaigns/{id}',[CampaignController::class,'show']);
-    Route::put('/campaigns/{id}',[CampaignController::class,'update'])->middleware('auth:sanctum');
-    Route::delete('/campaigns/{id}',[CampaignController::class,'destroy'])->middleware('auth:sanctum');
+    Route::middleware('auth:sanctum')->prefix('campaigns')->group(function () {
+        Route::get('/', [CampaignController::class, 'index']);
+        Route::post('/', [CampaignController::class, 'store']);
+        Route::get('/{id}', [CampaignController::class, 'show']);
+        Route::put('/{id}', [CampaignController::class, 'update']);
+        Route::delete('/{id}', [CampaignController::class, 'delete']);
+    });
+    // Orders & Order Processes
+    // -------------------------------
+    Route::middleware('auth:sanctum')->prefix('orders')->group(function () {
+        Route::get('/', [OrderController::class, 'index']);
+        Route::post('/', [OrderController::class, 'create']);
+        Route::delete('/{id}', [OrderController::class, 'destroy']);
+        Route::get('/orderFilter', [OrderController::class, 'filterOrders']);
+        //Route::post('/orderPayment/{id}', [OrderController::class, 'paymentOrder']);
+        //Route::post('/confirmOrder/{id}', [OrderController::class, 'confirmOrder']);
+        //Route::put('/orderPreparing/{id}', [OrderController::class, 'orderPreparing']);
+       // Route::put('/orderDelivery/{id}', [OrderController::class, 'orderDelivered']);
+        Route::put('/{id}', [OrderController::class, 'updateOrderProcess']);
+        //Route::put('update/{id}',[OrderController::class,'update']);
+    });
+    Route::middleware('auth:sanctum')->prefix('orderAddresses')->group(function(){
+        Route::post('/', [OrderAdressesController::class, 'create']);
+        Route::put('/{id}', [OrderAdressesController::class, 'update']);
+        Route::delete('/{id}', [OrderAdressesController::class, 'delete']);
+        Route::get('/', [OrderAdressesController::class, 'index']);
+        Route::get('/{id}', [OrderAdressesController::class, 'show']);
+    });
 
-    //CRUD orders
-    Route::get('/orders',[OrderController::class,'index']);
-    Route::post('/orders',[OrderController::class,'store'])->middleware('auth:sanctum');
-    Route::put('/orders/{id}',[OrderController::class,'update'])->middleware('auth:sanctum');
-    Route::delete('orders/{id}',[OrderController::class,'destroy'])->middleware('auth:sanctum');
-    Route::put('/orderStatus/{id}',[OrderController::class,'updateStatus'])->middleware('auth:sanctum');
-    Route::get('/orderFilter',[OrderController::class,'OrderFilter']);
-    //Sipariş Süreçleri
-    Route::post('/orderPayment/{id}',[OrderController::class,'paymentOrder'])->middleware('auth:sanctum'); //Ödeme işlemine geçis
-    Route::post('/confirmOrder/{id}',[OrderController::class,'confirmOrder'])->middleware('auth:sanctum'); //Siparis Onay
-    Route::put('/orderPreparing/{id}',[OrderController::class,'orderPreparing'])->middleware('auth:sanctum'); //Siparis Hazırlandı Kargoya Teslim
-    Route::put('/orderDelivery/{id}',[OrderController::class,'orderDelivered'])->middleware('auth:sanctum'); //Siparis Teslim edildi
-
-
-
-    //CRUD orderAddress
-    Route::post('/orderAddress',[OrderAdressesController::class,'store'])->middleware('auth:sanctum');
-    Route::put('/orderAddress/{id}',[OrderAdressesController::class,'update'])->middleware('auth:sanctum');
-    Route::delete('/orderAddress/{id}',[OrderAdressesController::class,'destroy'])->middleware('auth:sanctum');
-    Route::get('/orderAddress',[OrderAdressesController::class,'index']);
-    Route::get('/orderAddress/{id}',[OrderAdressesController::class,'show']);
-
-    //CRUD OrderProduct
-    Route::post('/orderProduct',[OrderProductController::class,'store'])->middleware('auth:sanctum');
-    Route::put('/orderProduct/{id}',[OrderProductController::class,'update'])->middleware('auth:sanctum');
-    Route::get('/orderProduct',[OrderProductController::class,'index']);
-    Route::get('/orderProduct/{id}',[OrderProductController::class,'show']);
-    Route::delete('/orderProduct/{id}',[OrderProductController::class,'destroy'])->middleware('auth:sanctum');
-
+    // Order Products
+    // -------------------------------
+    Route::middleware('auth:sanctum')->prefix('orderProduct')->group(function () {
+        Route::post('/', [OrderProductController::class, 'store']);
+        Route::put('/{id}', [OrderProductController::class, 'update']);
+        Route::get('/', [OrderProductController::class, 'index']);
+        Route::get('/{id}', [OrderProductController::class, 'show']);
+        Route::delete('/{id}', [OrderProductController::class, 'destroy']);
+    });
     //CRUD Invoices
-    Route::post('/invoices',[InvoicesController::class,'store'])->middleware('auth:sanctum');
-    Route::get('/invoices',[InvoicesController::class,'index'])->middleware('auth:sanctum');
-    Route::get('/invoices/{id}',[InvoicesController::class,'show'])->middleware('auth:sanctum');
-    Route::put('/invoices/{id}',[InvoicesController::class,'update'])->middleware('auth:sanctum');
-    Route::delete('/invoices/{id}',[InvoicesController::class,'destroy'])->middleware('auth:sanctum');
-    Route::post('/invoices/{id}/send-email', [InvoicesController::class, 'sendInvoiceEmail']);
-
+    Route::middleware('auth:sanctum')->prefix('invoices')->group(function () {
+        Route::post('/', [InvoicesController::class, 'store']);
+        Route::get('/', [InvoicesController::class, 'index']);
+        Route::get('/{id}', [InvoicesController::class, 'show']);
+        Route::put('/{id}', [InvoicesController::class, 'update']);
+        Route::delete('/{id}', [InvoicesController::class, 'destroy']);
+        Route::post('/{id}/send-email', [InvoicesController::class, 'sendInvoiceEmail']);
+    });
 
 });
-Route::prefix('v1')->group(function () {
-    Route::prefix('customer')->group(function () {
-
-        Route::post('/register',[CustomerController::class,'register']);
-        Route::post('/login',[CustomerController::class,'login']);
-        Route::post( '/add-profile',[CustomerController::class,'addProfile'])->middleware('auth:sanctum');
-        Route::delete('/delete-profile',[CustomerController::class,'destroyProfiles'])->middleware('auth:sanctum');
-        Route::get('/profile',[CustomerController::class,'getProfile'])->middleware('auth:sanctum');
-
-
-        Route::post('/address',[CustomerController::class,'createAddress'])->middleware('auth:sanctum');
-        Route::put('/address',[CustomerController::class,'updateAddress'])->middleware('auth:sanctum');
-        Route::delete('/address',[CustomerController::class,'deleteAddress'])->middleware('auth:sanctum');
-        Route::get('/address', [CustomerController::class,'index'])->middleware('auth:sanctum');
+Route::prefix('v1/customer')->group(function () {
+    Route::post('/register', [CustomerController::class, 'register']);
+    Route::post('/login', [CustomerController::class, 'login']);
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::post('/add-profile', [CustomerController::class, 'addProfile']);
+        Route::delete('/delete-profile', [CustomerController::class, 'destroyProfiles']);
+        Route::get('/profile', [CustomerController::class, 'getProfile']);
+        Route::post('/address', [CustomerController::class, 'createAddress']);
+        Route::put('/address', [CustomerController::class, 'updateAddress']);
+        Route::delete('/address', [CustomerController::class, 'deleteAddress']);
+        Route::get('/address', [CustomerController::class, 'index']);
     });
 });
